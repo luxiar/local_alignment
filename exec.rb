@@ -13,14 +13,12 @@ log = Logger.new('./tmp/log')
 
 # コマンドラインからの引数の取得
 opt = OptionParser.new
-opt.on('-i')
-opt.on('-o')
-argv = opt.parse!(ARGV)
+argv = ARGV.getopts("i:o:")
 
 # 入力フォルダ内のファイルパス・ファイル数を取得
 src_files = []
 src_files_count = 0
-GetData.enum_files('.'"#{argv[0]}"'', log) do |x|
+GetData.enum_files('.'"#{argv['i']}"'', log) do |x|
   src_files.push(x)
   src_files_count = src_files_count + 1
 end
@@ -45,7 +43,7 @@ src_files.each do |file|
 
   # jsonファイル出力
   out_dir = File.dirname(file)
-  out_dir.gsub!(argv[0], argv[1])
+  out_dir.gsub!(argv['i'], argv['o'])
   out_filename = File.basename(file)
   GetData.output_json(out_dir, out_filename, output_json)
   # output_jsonの結果（正常と異常）により、処理追加必須
