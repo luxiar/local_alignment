@@ -34,14 +34,16 @@ src_files.each do |file|
   annotations = JSON.parse(input_json, symbolize_names: true)
   Annotation.normalize!(annotations)
 
-  p annotations
+  # p annotations
     # p Annotation.normalize!("str")
 
   # pubannotationのサイトから取得
   original = get_original_json(annotations[:sourcedb], annotations[:sourceid])
-
-  response = Annotation.align_annotations(annotations, original)
-# p response
+  a =  JSON.parse(original, symbolize_names: true)
+  p a[:text]
+# p original
+  response = Annotation.align_annotations(annotations, a[:text])
+p response
 
   # 出力処理
   pathfile = file
@@ -49,11 +51,7 @@ src_files.each do |file|
   out_dir.gsub!(src_folder, out_folder)
   out_filename = File.basename(file)
 
-  output = JSON.parse(response[:text], symbolize_names: true)
-
-  output[:denotations] = response[:denotations]
-  output_json = JSON.generate(output)
-
+  output_json = JSON.generate(response)
   FileUtils.mkdir_p(out_dir) unless FileTest.exist?(out_dir)
   File.open("#{out_dir}/#{out_filename}",'w') do |t|
    t.puts(output_json)
