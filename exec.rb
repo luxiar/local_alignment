@@ -12,7 +12,6 @@ require './lib/get_data.rb'
 log = Logger.new('./tmp/log')
 
 # コマンドラインからの引数の取得
-opt = OptionParser.new
 argv = ARGV.getopts("i:o:")
 
 # 入力フォルダ内のファイルパス・ファイル数を取得
