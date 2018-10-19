@@ -1,0 +1,4 @@
+E, [2018-10-18T17:23:13.887165 #6419] ERROR -- : log data
+E, [2018-10-18T17:23:13.887318 #6419] ERROR -- : log data
+E, [2018-10-18T17:24:18.109001 #6448] ERROR -- : ./source_folder/test : String : s
+E, [2018-10-18T17:24:18.109403 #6448] ERROR -- : ./source_folder : String : s
