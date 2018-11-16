@@ -30,8 +30,8 @@ class TextAlignment::GLCSAlignment
   # When the array, mappings, is given, general suffix comparision is performed based on the mappings.
   # Exception is raised when nil given passed to either str1, str2 or dictionary
   def initialize(str1, str2, mappings = [])
-    raise ArgumentError, "nil string"     if str1 == nil || str2 == nil
-    raise ArgumentError, "nil dictionary" if mappings == nil
+    return "nil string"     if str1 == nil || str2 == nil
+    return "nil dictionary" if mappings == nil
 
     # index the mappings in hash.
     @dic = (mappings + mappings.map{|e| e.reverse}).to_h

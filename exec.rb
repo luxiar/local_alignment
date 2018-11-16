@@ -4,65 +4,100 @@ require 'active_support/core_ext'
 require 'net/https'
 require 'open-uri'
 require 'optparse'
-require 'logger'
+require 'each_with_anim'
+require 'inifile'
+require 'sys/filesystem'
 require './lib/annotation.rb'
 require './lib/text_alignment/text_alignment.rb'
-require './lib/get_data.rb'
+require './lib/common.rb'
+require './lib/function.rb'
 
 # コマンドラインからの引数の取得
-@argv = ARGV.getopts("i:o:")
-# ログファイル作成
-log = Logger.new('./tmp/log')
+@argv = ARGV.getopts('i:o:f')
 
-# 入力ファイル(json)を取得する
-def get_local_json(file_path)
-  input_json = GetData.local_json(file_path)
-  # input_jsonの結果（正常と異常）により、処理追加必須
-  annotations = JSON.parse(input_json, symbolize_names: true)
-  Annotation.normalize!(annotations)
-  # normalizeの結果（正常と異常）により、処理追加必須
-  annotations
-end
+begin
+  source_folder = '.'"#{@argv['i']}"''
+  target_folder = '.'"#{@argv['o']}"''
+  option_ = @argv['f']
+  # コマンドラインオプション(f)があった場合、リジュームせずに最初からやり直す
+  if @argv['f']
+    FileUtils.rm_rf(target_folder) if File.directory?(target_folder)
+    # iniファイル初期化
+    Function.iniFileUpdate(0, 0, 'null', 'null', 'null')
+  end
 
-# オリジナルファイル(json)を取得する
-def get_original_json(sourcedb, sourceid)
-  # pubannotationのサイトからjsonファイルを取得する
-  original = GetData.original_json(sourcedb, sourceid)
-  # originalの結果（正常と異常）により、処理追加必須
-  JSON.parse(original, symbolize_names: true)
-end
+  # 入力ファイルのファイルパス配列を取得。
+  ini_folder_files_max = Function.getIniFile('constant','folder_files_max')
+  source_files = []
+  source_files_count = 0
+  # 入力フォルダーのファイルパスを配列化、ファイル数を取得する。
+  Function.enum_files(source_folder, ini_folder_files_max) do |x|
+    source_files << x
+    source_files_count = source_files_count + 1
+  end
+  # 全入力ファイル数・入力フォルダ名・出力フォルダ名をiniファイルに設定
+  Function.iniFileUpdate(source_files_count, '', source_folder, target_folder, '')
 
-def get_align_annotations(annotations, doc)
-  output_json = Annotation.align_annotations(annotations, doc)
-  # output_jsonの結果（正常と異常）により、処理追加必須
-  Annotation.normalize!(output_json)
-  # normalizeの結果（正常と異常）により、処理追加必須
-  output_json
-end
+  # 入力フォルダと同サイズのディスク空き容量がなければエラーにする
+  stat = Sys::Filesystem.stat('/')
+  dest_free = (stat.blocks_free * stat.block_size).to_f / 1024
+  src_folder_size = Function.source_folder_size(source_folder)
+  Function.proc_exit(source_folder) if dest_free < src_folder_size
 
-def output_json(file_path, align_annotations)
-  out_dir = File.dirname(file_path)
-  out_dir.gsub!(@argv['i'], @argv['o'])
-  out_filename = File.basename(file_path)
-  GetData.output_json(out_dir, out_filename, align_annotations)
-  # output_jsonの結果（正常と異常）により、処理追加必須
-end
+  # 取得したファイルパスをソーティングする
+  source_files = Function.sort_sources(source_folder, source_files)
 
-# 入力フォルダ内のファイルパス・ファイル数を取得
-src_files = []
-src_files_count = 0
-GetData.enum_files('.'"#{@argv['i']}"'', log) do |x|
-  src_files.push(x)
-  src_files_count = src_files_count + 1
-end
+  # iniファイル読み込み
+  ini_total = Function.getIniFile('global','total')
+  ini_done = Function.getIniFile('global','done')
 
-src_files.each do |file|
-  # 入力ファイル(json)を取得する
-  annotations = get_local_json(file)
-  # オリジナルファイル(json)を取得する
-  original_json = get_original_json(annotations[:sourcedb], annotations[:sourceid])
-  # 取得した入力ファイル(json)とオリジナルファイル(json)を整列する
-  align_annotations = get_align_annotations(annotations, original_json[:text])
-  # 整列したjsonファイルを出力
-  output_json(file, align_annotations)
+  # 全入力ファイル数が正常終了のファイル数と一致している場合、iniファイルを初期化する
+  Function.iniFileUpdate(0, 0, 'null', 'null', 'null') if source_files_count == ini_done
+
+  source_files.each_with_animation.with_index do |inputfile_path, index|
+    next if ini_done > index
+    if ini_done < ini_total
+      index = ini_done
+      inputfile_path = inputfile_path
+    end
+
+    # 入力ファイル(json)を取得する
+    local_json = Function.get_local_json(inputfile_path)
+    sourcedb = local_json[:sourcedb]
+    sourceid = local_json[:sourceid]
+
+    # 出力ファイルのファイルパス設定
+    output_dir = File.dirname(inputfile_path)
+    output_dir.gsub!(@argv['i'], @argv['o'])
+    output_filename = "#{sourcedb}_#{sourceid}"
+    outputfile = "#{output_dir}/#{output_filename}"
+    # オリジナルjsonを取得する
+    original_json = Function.get_original_json(inputfile_path, sourcedb, sourceid)
+    # オリジナルjsonが一つのハッシュの場合
+    if original_json.length == 1
+      # マージ処理
+      merge_annotations = Function.merge_align_annotations(inputfile_path, local_json, original_json[0][:text])
+      # 出力処理
+      outputfile = "#{outputfile}.json"
+      Function.output_json(output_dir, outputfile, merge_annotations, '')
+    else
+      merge_annotations = Function.merge_prepare_annotations_divs(inputfile_path, local_json, original_json)
+      # 取得した入力ファイル(json)とオリジナルファイル(json)を整列する
+      next unless merge_annotations.present?
+      if merge_annotations.length == 1
+        # 出力処理
+        outputfile = "#{outputfile}.json"
+        Function.output_json(output_dir, outputfile, merge_annotations[0], '')
+      else
+        merge_annotations.each do |annotation|
+          # 出力処理
+          Function.output_json(output_dir, outputfile, annotation, annotation[:divid])
+        end
+      end
+    end
+    ini_done = index + 1
+    Function.iniFileUpdate('', ini_done, '', '', '')
+  end
+rescue ErrorMsg => e
+  Function.proc_message e.message
 end

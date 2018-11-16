@@ -10,13 +10,13 @@ end
 class << TextAlignment
 
   def cdiff(str1, str2)
-    raise ArgumentError, "nil string" if str1.nil? || str2.nil?
-    raise "a nil character appears in the input string" if str1.index(TextAlignment::NIL_CHARACTER) || str2.index(TextAlignment::NIL_CHARACTER)
+    return "nil string" if str1.nil? || str2.nil?
+    return "a nil character appears in the input string" if str1.index(TextAlignment::NIL_CHARACTER) || str2.index(TextAlignment::NIL_CHARACTER)
     sdiff2cdiff(Diff::LCS.sdiff(str1, str2))
   end
 
   def sdiff2cdiff (sdiff)
-    raise ArgumentError, "nil sdiff" if sdiff.nil?
+    return "nil sdiff" if sdiff.nil?
 
     cdiff_str1, cdiff_str2 = '', ''
 

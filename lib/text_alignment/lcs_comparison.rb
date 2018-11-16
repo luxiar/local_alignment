@@ -11,7 +11,7 @@ class TextAlignment::LCSComparison
   attr_reader :str1_match_initial, :str1_match_final, :str2_match_initial, :str2_match_final
 
   def initialize(str1, str2, lcs = nil, sdiff = nil)
-    raise ArgumentError, "nil string" if str1 == nil || str2 == nil
+    return "nil string" if str1 == nil || str2 == nil
     @str1, @str2 = str1, str2
     _lcs_comparison(str1, str2, lcs, sdiff)
   end

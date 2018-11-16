@@ -1,8 +1,8 @@
 class Annotation
   # normalize annotations passed by an HTTP call
   def self.normalize!(annotations, prefix = nil)
-    raise ArgumentError, "annotations must be a hash." unless annotations.class == Hash
-    raise ArgumentError, "annotations must include a 'text'"  unless annotations[:text].present?
+    return "annotations must be a hash." unless annotations.class == Hash
+    return "annotations must include a 'text'"  unless annotations[:text].present?
 
     if annotations[:sourcedb].present?
       annotations[:sourcedb] = 'PubMed' if annotations[:sourcedb].downcase == 'pubmed'
@@ -11,7 +11,7 @@ class Annotation
     end
 
     if annotations[:denotations].present?
-      raise ArgumentError, "'denotations' must be an array." unless annotations[:denotations].class == Array
+      return "'denotations' must be an array." unless annotations[:denotations].class == Array
       annotations[:denotations].each{|d| d = d.symbolize_keys}
 
       annotations = Annotation.chain_spans(annotations)
@@ -20,29 +20,27 @@ class Annotation
       idnum = 1
 
       annotations[:denotations].each do |a|
-        raise ArgumentError, "a denotation must have a 'span' or a pair of 'begin' and 'end'." unless (a[:span].present? && a[:span][:begin].present? && a[:span][:end].present?) || (a[:begin].present? && a[:end].present?)
-        raise ArgumentError, "a denotation must have an 'obj'." unless a[:obj].present?
+        return "a denotation must have a 'span' or a pair of 'begin' and 'end'." unless (a[:span].present? && a[:span][:begin].present? && a[:span][:end].present?) || (a[:begin].present? && a[:end].present?)
+        return "a denotation must have an 'obj'." unless a[:obj].present?
 
         unless a.has_key? :id
           idnum += 1 until !ids.include?('T' + idnum.to_s)
           a[:id] = 'T' + idnum.to_s
           idnum += 1
         end
-
         a[:span] = {begin: a[:begin], end: a[:end]} if !a[:span].present? && a[:begin].present? && a[:end].present?
 
         a[:span][:begin] = a[:span][:begin].to_i if a[:span][:begin].is_a? String
         a[:span][:end]   = a[:span][:end].to_i   if a[:span][:end].is_a? String
 
-        raise ArgumentError, "the begin offset must be between 0 and the length of the text: #{a}" if a[:span][:begin] < 0 || a[:span][:begin] > annotations[:text].length
-        raise ArgumentError, "the end offset must be between 0 and the length of the text." if a[:span][:end] < 0 || a[:span][:end] > annotations[:text].length
-        raise ArgumentError, "the begin offset must not be bigger than the end offset." if a[:span][:begin] > a[:span][:end]
+        return "the begin offset must be between 0 and the length of the text: #{a}" if a[:span][:begin] < 0 || a[:span][:begin] > annotations[:text].length
+        return "the end offset must be between 0 and the length of the text." if a[:span][:end] < 0 || a[:span][:end] > annotations[:text].length
+        return "the begin offset must not be bigger than the end offset." if a[:span][:begin] > a[:span][:end]
       end
     end
 
     if annotations[:relations].present?
-      raise ArgumentError, "'relations' must be an array." unless annotations[:relations].class == Array
-
+      return "'relations' must be an array." unless annotations[:relations].class == Array
       denotation_ids = annotations[:denotations].collect{|a| a[:id]}
 
       annotations[:relations].each{|a| a = a.symbolize_keys}
@@ -51,8 +49,8 @@ class Annotation
       idnum = 1
 
       annotations[:relations].each do |a|
-        raise ArgumentError, "a relation must have 'subj', 'obj' and 'pred'." unless a[:subj].present? && a[:obj].present? && a[:pred].present?
-        raise ArgumentError, "'subj' and 'obj' of a relation must reference to a denotation: [#{a}]." unless (denotation_ids.include? a[:subj]) && (denotation_ids.include? a[:obj])
+        return "a relation must have 'subj', 'obj' and 'pred'." unless a[:subj].present? && a[:obj].present? && a[:pred].present?
+        return "'subj' and 'obj' of a relation must reference to a denotation: [#{a}]." unless (denotation_ids.include? a[:subj]) && (denotation_ids.include? a[:obj])
 
         unless a.has_key? :id
           idnum += 1 until !ids.include?('R' + idnum.to_s)
@@ -63,7 +61,7 @@ class Annotation
     end
 
     if annotations[:modifications].present?
-      raise ArgumentError, "'modifications' must be an array." unless annotations[:modifications].class == Array
+      return "'modifications' must be an array." unless annotations[:modifications].class == Array
       annotations[:modifications].each{|a| a = a.symbolize_keys}
 
       dr_ids = annotations[:denotations].collect{|a| a[:id]} + annotations[:relations].collect{|a| a[:id]}
@@ -72,8 +70,8 @@ class Annotation
       idnum = 1
 
       annotations[:modifications].each do |a|
-        raise ArgumentError, "a modification must have 'pred' and 'obj'." unless a[:pred].present? && a[:obj].present?
-        raise ArgumentError, "'obj' of a modification must reference to a denotation or a relation: [#{a}]." unless dr_ids.include? a[:obj]
+        return "a modification must have 'pred' and 'obj'." unless a[:pred].present? && a[:obj].present?
+        return "'obj' of a modification must reference to a denotation or a relation: [#{a}]." unless dr_ids.include? a[:obj]
 
         unless a.has_key? :id
           idnum += 1 until !ids.include?('M' + idnum.to_s)
@@ -90,11 +88,6 @@ class Annotation
     end
 
     annotations
-  end
-
-
-  def self.prepare_annotations(annotations, doc, options = {})
-    annotations = align_annotations(annotations, doc, options[:span])
   end
 
   def self.chain_spans(annotations)
@@ -123,67 +116,6 @@ class Annotation
     annotations
   end
 
-  # def self.bag_spans(annotations)
-  #   denotations = annotations[:denotations]
-  #   relations = annotations[:relations]
-  #
-  #   tomerge = Hash.new
-  #
-  #   new_relations = Array.new
-  #   relations.each do |ra|
-  #     if ra[:pred] == '_lexicallyChainedTo'
-  #       tomerge[ra[:obj]] = ra[:subj]
-  #     else
-  #       new_relations << ra
-  #     end
-  #   end
-  #   idx = Hash.new
-  #   denotations.each_with_index {|ca, i| idx[ca[:id]] = i}
-  #
-  #   mergedto = Hash.new
-  #   tomerge.each do |from, to|
-  #     to = mergedto[to] if mergedto.has_key?(to)
-  #     fda = denotations[idx[from]]
-  #     tda = denotations[idx[to]]
-  #     tda[:span] = [tca[:span]] unless tca[:span].respond_to?('push')
-  #     tca[:span].push (fca[:span])
-  #     denotations.delete_at(idx[from])
-  #     mergedto[from] = to
-  #   end
-  #
-  #   annotations[:denotations] = denotations
-  #   annotations[:relations] = new_relations
-  #   annotations
-  # end
-
-  # def self.bag_denotations(denotations, relations)
-  #   mergedto = {}
-  #   relations.each do |ra|
-  #     if ra[:pred] == '_lexicallyChainedTo'
-  #       # To see if either subjet or object is already merged to another.
-  #       ra[:subj] = mergedto[ra[:subj]] if mergedto.has_key? ra[:subj]
-  #       ra[:obj] = mergedto[ra[:obj]] if mergedto.has_key? ra[:obj]
-  #
-  #       # To find the indice of the subject and object
-  #       idx_from = denotations.find_index{|d| d[:id] == ra[:subj]}
-  #       idx_to   = denotations.find_index{|d| d[:id] == ra[:obj]}
-  #       from = denotations[idx_from]
-  #       to   = denotations[idx_to]
-  #
-  #       from[:span] = [from[:span]] unless from[:span].respond_to?('push')
-  #       to[:span]   = [to[:span]]   unless to[:span].respond_to?('push')
-  #
-  #       # To merge the two spans (in the reverse order)
-  #       from[:span] = to[:span] + from[:span]
-  #       denotations.delete_at(idx_to)
-  #       mergedto[ra[:obj]] = ra[:subj]
-  #     end
-  #   end
-  #   relations.delete_if{|ra| ra[:pred] == '_lexicallyChainedTo'}
-  #
-  #   return denotations, relations
-  # end
-
   # to work on the hash representation of denotations
   # to assume that there is no bag representation to this method
   def self.align_denotations(denotations, str1, str2)
@@ -195,54 +127,47 @@ class Annotation
   # TODO: when a span is specified, restrict the alignment within the span.
   def self.align_annotations(annotations, doc, span = nil)
     original_text = annotations[:text]
-    # annotations[:text] = doc.original_body.nil? ? doc.body : doc.original_body
     annotations[:text] = doc
-
     if annotations[:denotations].present? && original_text != annotations[:text]
       num = annotations[:denotations].length
       annotations[:denotations] = align_denotations(annotations[:denotations], original_text, annotations[:text])
-      raise "Alignment failed. Text may be too much different." if annotations[:denotations].length < num
-      annotations[:denotations].each{|d| raise "Alignment failed. Text may be too much different." if d[:span][:begin].nil? || d[:span][:end].nil?}
+      return "Alignment failed. Text may be too much different." if annotations[:denotations].length < num
+      annotations[:denotations].each{|d| return "Alignment failed. Text may be too much different." if d[:span][:begin].nil? || d[:span][:end].nil?}
     end
 
     annotations.select{|k,v| v.present?}
   end
 
   def self.prepare_annotations_divs(annotations, divs)
-    if divs.length == 1
-      [prepare_annotations(annotations, divs[0])]
-    else
-      annotations_collection = []
+    annotations_collection = []
+    div_index = divs.collect{|d| [d[:divid], d]}.to_h
+    divs_hash = divs.collect{|d| d.to_hash}
+    fit_index = TextAlignment.find_divisions(annotations[:text], divs_hash)
 
-      div_index = divs.collect{|d| [d.serial, d]}.to_h
-      divs_hash = divs.collect{|d| d.to_hash}
-      fit_index = TextAlignment.find_divisions(annotations[:text], divs_hash)
-
-      fit_index.each do |i|
-        if i[0] >= 0
-          ann = {sourcedb:annotations[:sourcedb], sourceid:annotations[:sourceid], divid:i[0]}
-          idx = {}
-          ann[:text] = annotations[:text][i[1][0] ... i[1][1]]
-          if annotations[:denotations].present?
-            ann[:denotations] = annotations[:denotations]
-                                 .select{|a| a[:span][:begin] >= i[1][0] && a[:span][:end] <= i[1][1]}
-                                .collect{|a| n = a.dup; n[:span] = a[:span].dup; n}
-                                   .each{|a| a[:span][:begin] -= i[1][0]; a[:span][:end] -= i[1][0]}
-            ann[:denotations].each{|a| idx[a[:id]] = true}
-          end
-          if annotations[:relations].present?
-            ann[:relations] = annotations[:relations].select{|a| idx[a[:subj]] && idx[a[:obj]]}
-            ann[:relations].each{|a| idx[a[:id]] = true}
-          end
-          if annotations[:modifications].present?
-            ann[:modifications] = annotations[:modifications].select{|a| idx[a[:obj]]}
-            ann[:modifications].each{|a| idx[a[:id]] = true}
-          end
-          annotations_collection << prepare_annotations(ann, div_index[i[0]])
+    fit_index.each do |i|
+      if i[0] >= 0
+        ann = {sourcedb:annotations[:sourcedb], sourceid:annotations[:sourceid], divid:i[0]}
+        idx = {}
+        ann[:text] = annotations[:text][i[1][0] ... i[1][1]]
+        if annotations[:denotations].present?
+          ann[:denotations] = annotations[:denotations]
+                               .select{|a| a[:span][:begin] >= i[1][0] && a[:span][:end] <= i[1][1]}
+                              .collect{|a| n = a.dup; n[:span] = a[:span].dup; n}
+                                 .each{|a| a[:span][:begin] -= i[1][0]; a[:span][:end] -= i[1][0]}
+          ann[:denotations].each{|a| idx[a[:id]] = true}
         end
+        if annotations[:relations].present?
+          ann[:relations] = annotations[:relations].select{|a| idx[a[:subj]] && idx[a[:obj]]}
+          ann[:relations].each{|a| idx[a[:id]] = true}
+        end
+        if annotations[:modifications].present?
+          ann[:modifications] = annotations[:modifications].select{|a| idx[a[:obj]]}
+          ann[:modifications].each{|a| idx[a[:id]] = true}
+        end
+        annotations_collection << align_annotations(ann, div_index[i[0]][:text])
       end
-      # {div_index: fit_index}
-      annotations_collection
     end
+    # {div_index: fit_index}
+    annotations_collection
   end
 end

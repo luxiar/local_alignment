@@ -18,8 +18,8 @@ class TextAlignment::GLCSTextAlignment
   attr_reader :str1_match_initial, :str1_match_final, :str2_match_initial, :str2_match_final
 
   def initialize(str1, str2, mappings = [], lcs = nil, sdiff = nil)
-    raise ArgumentError, "nil string" if str1.nil? || str2.nil?
-    raise ArgumentError, "nil mappings" if mappings.nil?
+    return "nil string" if str1.nil? || str2.nil?
+    return "nil mappings" if mappings.nil?
 
     _glcs_alignment_fast(str1, str2, mapptings, lcs, sdiff)
   end

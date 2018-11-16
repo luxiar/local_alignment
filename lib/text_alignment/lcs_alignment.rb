@@ -8,7 +8,7 @@ class TextAlignment::LCSAlignment
   # It initializes the LCS table for the given two strings, str1 and str2.
   # Exception is raised when nil given passed to either str1, str2 or dictionary
   def initialize(str1, str2, lcs = nil, sdiff = nil)
-    raise ArgumentError, "nil string" if str1 == nil || str2 == nil
+    return "nil string" if str1 == nil || str2 == nil
     sdiff = TextAlignment::LCSMin.new(str1, str2).sdiff if sdiff.nil?
     _compute_position_map(str1, str2, sdiff)
   end
