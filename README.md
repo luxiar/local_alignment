@@ -42,8 +42,8 @@ bundle exec ruby exec.rb -i /source_folder -o /out_folder -b
 ・　取得したオリジナルjsonにjson arrayが帰ってきたら関数モジュール経由で
 　　PubAnnotationのannotationモデルの中のprepare_annotations_divsのロジックで処理する
 　　　処理した結果を取得した入力ファイル(json)の出力ファイル[sourcedb_sourceid_divid.json]として、出力jsonフォルダに出力する
-上記の各処理中に例外で止まったら、処理せずに、そこで止める。
-エラー内容はprocess.iniに出力する
+上記の各処理中にエラーが起きたら、次の処理をせずに、そこで止める。
+進捗はprocess.iniに出力する
 ```
 
 ###  関数モジュール(function.rb)
