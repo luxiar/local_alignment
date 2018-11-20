@@ -12,9 +12,9 @@ module Common
 
     # オリジナルjsonファイル取得
     def original_json(sourcedb, sourceid)
+      # pubannotationサイトからオリジナルjsonを取得する
       url = "http://pubannotation.org/docs/sourcedb/#{sourcedb}/sourceid/#{sourceid}.json"
       uri = URI.parse(url)
-
       response = Net::HTTP.start(uri.host, uri.port) do |http|
         http.get(uri.request_uri)
       end
@@ -84,7 +84,6 @@ module Common
             end
           end
         end
-
         # 編集したファイルを保存する
         File.open(outputfile, 'w') do |io|
           JSON.dump(data, io)

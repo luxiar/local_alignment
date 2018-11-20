@@ -2,10 +2,20 @@ class ErrorMsg < StandardError; end
 
 module Function
   class << self
+    # 出力jsonフォルダの削除、iniファイルの初期化を行う
+    def setBeginning(target_folder)
+      # 出力jsonフォルダがあったら削除する
+      FileUtils.rm_rf(target_folder) if File.directory?(target_folder)
+      # iniファイル初期化
+      Function.iniFileUpdate(0, 0, 'null', 'null', 'null')
+    rescue => e
+      error_msg = "リジュームせずに最初からやり直すに失敗"
+      warn "リジュームせずに最初からやり直すに失敗：#{e.backtrace}"
+      raise ErrorMsg, error_msg
+    end
+
     # 入力フォルダ内のファイルパスの配列取得を行う
     def enum_files(source_path, ini_folder_files_max)
-      # iniファイル読み込み
-      inidata = IniFile.load("./process.ini")
       error_msg = ''
       Dir.foreach(source_path) do |x|
         file_cnt = 0
@@ -39,14 +49,15 @@ module Function
       raise ErrorMsg, error_msg
     end
 
-    # 入力ファイル(json)の取得を行う
+    # 入力ファイル(json)の取り込みを行う
     def get_local_json(file_path)
       error_msg = ''
       input_json = Common.local_json(file_path)
-      return nil if input_json.blank?
-      # input_jsonの結果（正常と異常）により、処理追加必須
+      if input_json.blank?
+        error_msg = "#{file_path}の入力jsonファイル取得失敗:#{input_json}"
+        raise ErrorMsg, error_msg
+      end
       local_json = JSON.parse(input_json, symbolize_names: true)
-
       # 取得した入力ファイル(json)のdenotationsのidを連番する
       if local_json[:denotations].present?
         i = 1
@@ -95,27 +106,41 @@ module Function
       local_json
     rescue => e
       error_msg = "#{file_path}の読み込みに失敗" if error_msg.blank?
-      warn "例外発生：#{file_path}の読み込みに失敗：#{e.backtrace}"
+      warn "#{file_path}の読み込みに失敗：#{e.backtrace}"
       raise ErrorMsg, error_msg
     end
 
     # オリジナルファイル(json)の取得を行う
     def get_original_json(inputfile_path, sourcedb, sourceid)
       error_msg = ''
-      # pubannotationサイトからオリジナルjsonを取得する
       original_json = Common.original_json(sourcedb, sourceid)
-      doc = JSON.parse(original_json, symbolize_names: true) if original_json.present?
-      # オリジナルファイルがhashならarray化する
-      doc = [doc] if doc.class == Hash
-      # オリジナルjsonがarrayかhash形式以外
-      unless doc.class == Hash || doc.class == Array
-        error_msg = "入力ファイル(#{inputfile_path})のオリジナルファイルの取得に失敗"
+      if original_json.blank?
+        error_msg = "#{inputfile_path}のsourcedb=#{sourcedb},sourceid=#{sourceid}のオリジナルファイル取得失敗:#{original_json}"
         raise ErrorMsg, error_msg
       end
-      doc
+      original_jsons = JSON.parse(original_json, symbolize_names: true) if original_json.present?
+      # オリジナルjsonがarrayかhash形式以外
+      unless original_jsons.class == Hash || original_jsons.class == Array
+        error_msg = "入力ファイル(#{inputfile_path})のオリジナルファイルがハッシュ、または配列の形式ではない：#{original_jsons.class}"
+        raise ErrorMsg, error_msg
+      end
+      # オリジナルファイルがhashならarray化する
+      original_jsons = [original_jsons] if original_jsons.class == Hash
+
+      annotations = []
+      annotations = original_jsons.each do |original_json|
+        # normalize処理確認
+        annotation = Annotation.normalize!(original_json)
+        unless annotation.class == Hash
+          error_msg = "入力ファイル(#{inputfile_path})のオリジナルファイルのnormalize処理失敗:#{annotation}"
+          raise ErrorMsg, error_msg
+        end
+        annotation
+      end
+      annotations
     rescue => e
       error_msg = "入力ファイル(#{inputfile_path})のオリジナルjsonの取得に失敗" if error_msg.blank?
-      warn "例外発生：入力ファイル(#{inputfile_path})のオリジナルjsonの取得に失敗：#{e.backtrace}"
+      warn "入力ファイル(#{inputfile_path})のオリジナルjsonの取得に失敗：#{e.backtrace}"
       raise ErrorMsg, error_msg
     end
 
@@ -135,7 +160,7 @@ module Function
       end
       annotations
     rescue => e
-      error_msg = "マージ処理失敗（入力ファイル(#{inputfile_path})とオリジナルファイル）"
+      error_msg = "マージ処理失敗（入力ファイル(#{inputfile_path})とオリジナルファイル）" if error_msg.blank?
       warn "マージ処理失敗（入力ファイル(#{inputfile_path})とオリジナルファイル）：#{e.backtrace}"
       raise ErrorMsg, error_msg
     end
@@ -149,18 +174,18 @@ module Function
         raise ErrorMsg, error_msg
       end
       annotations = []
-      annotations = prepare_annotations_divs.each do |annotation|
+      annotations = prepare_annotations_divs.each do |prepare_annotation|
         # normalize処理確認
-        annotations = Annotation.normalize!(annotation)
-        unless annotations.class == Hash
-          error_msg = "マージ処理時のnormalize処理失敗:#{annotations}"
+        annotation = Annotation.normalize!(prepare_annotation)
+        unless annotation.class == Hash
+          error_msg = "マージ処理時のnormalize処理失敗:#{annotation}"
           raise ErrorMsg, error_msg
         end
-        annotations
+        annotation
       end
       annotations
     rescue => e
-      error_msg = "マージ処理失敗（入力ファイル(#{inputfile_path})とオリジナルファイル）"
+      error_msg = "マージ処理失敗（入力ファイル(#{inputfile_path})とオリジナルファイル）" if error_msg.blank?
       warn "マージ処理失敗（入力ファイル(#{inputfile_path})とオリジナルファイル）：#{e.backtrace}"
       raise ErrorMsg, error_msg
     end
@@ -174,7 +199,7 @@ module Function
       raise ErrorMsg, error_msg unless ret == true
       ret
     rescue => e
-      error_msg = "ファイル（#{outputfile}）出力に失敗"
+      error_msg = "ファイル（#{outputfile}）出力に失敗" if error_msg.blank?
       warn "ファイル（#{outputfile}）出力に失敗：#{e.backtrace}"
       raise ErrorMsg, error_msg
     end
@@ -199,8 +224,8 @@ module Function
       inifile = IniFile.load('./process.ini')
       inifile[section][name]
     rescue => e
-      error_msg = "例外発生：ini[#{section}][#{name}]の読み込むに失敗"
-      warn "例外発生：ini[#{section}][#{name}]の読み込むに失敗：#{e.backtrace}"
+      error_msg = "ini[#{section}][#{name}]の読み込むに失敗"
+      warn "ini[#{section}][#{name}]の読み込むに失敗：#{e.backtrace}"
       raise ErrorMsg, error_msg
     end
 
