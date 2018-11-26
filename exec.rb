@@ -92,7 +92,6 @@ begin
         next unless merge_annotations.present?
         if merge_annotations.length == 1
           # 出力処理
-          outputfile = "#{outputfile}.json"
           Function.output_json(output_dir, outputfile, merge_annotations[0], merge_annotations[0][:divid])
         else
           merge_annotations.each do |annotation|
