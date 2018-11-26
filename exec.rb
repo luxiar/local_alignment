@@ -16,6 +16,11 @@ require './lib/function.rb'
 @argv = ARGV.getopts('i:o:b')
 
 begin
+  # 比較用の変数初期化
+  cmp_inputfile_path = nil
+  cmp_sourcedb = nil
+  cmp_sourceid = nil
+  # コマンドラインオプションの取得
   source_folder = '.'"#{@argv['i']}"''
   target_folder = '.'"#{@argv['o']}"''
   option_beginning = @argv['b']
@@ -56,43 +61,49 @@ begin
       index = ini_done
       inputfile_path = inputfile_path
     end
-
     # 入力ファイル(json)を取得する
     local_json = Function.get_local_json(inputfile_path)
     sourcedb = local_json[:sourcedb]
     sourceid = local_json[:sourceid]
-
     # 出力ファイルのファイルパス設定
     output_dir = File.dirname(inputfile_path)
     output_dir.gsub!(@argv['i'], @argv['o'])
     output_filename = "#{sourcedb}_#{sourceid}"
     outputfile = "#{output_dir}/#{output_filename}"
-    # オリジナルjsonを取得する
-    original_json = Function.get_original_json(inputfile_path, sourcedb, sourceid)
-    if original_json.length == 1
-      # マージ処理（ハッシュリターン）
-      merge_annotations = Function.merge_align_annotations(inputfile_path, local_json, original_json[0][:text])
-      # 出力処理
-      outputfile = "#{outputfile}.json"
-      Function.output_json(output_dir, outputfile, merge_annotations, '')
+    # 同じファイルパスのjsonファイルのsourcedbとsourceidが一致している場合
+    if cmp_inputfile_path == inputfile_path and cmp_sourcedb == sourcedb and cmp_sourceid == sourceid
+      next
     else
-      # マージ処理（配列リターン）
-      merge_annotations = Function.merge_prepare_annotations_divs(inputfile_path, local_json, original_json)
-      # 取得した入力ファイル(json)とオリジナルファイル(json)を整列する
-      next unless merge_annotations.present?
-      if merge_annotations.length == 1
+      cmp_inputfile_path = inputfile_path
+      cmp_sourcedb = sourcedb
+      cmp_sourceid = sourceid
+      # オリジナルjsonを取得する
+      original_json = Function.get_original_json(inputfile_path, sourcedb, sourceid)
+      if original_json.length == 1
+        # マージ処理（ハッシュリターン）
+        merge_annotations = Function.merge_align_annotations(inputfile_path, local_json, original_json[0][:text])
         # 出力処理
         outputfile = "#{outputfile}.json"
-        Function.output_json(output_dir, outputfile, merge_annotations[0], '')
+        Function.output_json(output_dir, outputfile, merge_annotations, '')
       else
-        merge_annotations.each do |annotation|
-          # 出力処理（複数）
-          Function.output_json(output_dir, outputfile, annotation, annotation[:divid])
+        # マージ処理（配列リターン）
+        merge_annotations = Function.merge_prepare_annotations_divs(inputfile_path, local_json, original_json)
+        # 取得した入力ファイル(json)とオリジナルファイル(json)を整列する
+        next unless merge_annotations.present?
+        if merge_annotations.length == 1
+          # 出力処理
+          outputfile = "#{outputfile}.json"
+          Function.output_json(output_dir, outputfile, merge_annotations[0], merge_annotations[0][:divid])
+        else
+          merge_annotations.each do |annotation|
+            # 出力処理（複数）
+            Function.output_json(output_dir, outputfile, annotation, annotation[:divid])
+          end
         end
       end
+      ini_done = index + 1
+      Function.iniFileUpdate('', ini_done, '', '', '')
     end
-    ini_done = index + 1
-    Function.iniFileUpdate('', ini_done, '', '', '')
   end
 rescue ErrorMsg => e
   Function.proc_message e.message
