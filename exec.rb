@@ -54,6 +54,7 @@ begin
   # 取得したファイルパスをソーティングする
   source_files = Function.sort_sources(source_folder, source_files)
 
+  # ソーティングしたファイルパスを元に、入力jsonファイル毎に処理する
   source_files.each_with_animation.with_index do |inputfile_path, index|
     # 途中で止めた場合、続きから処理を再開してリジュームする
     next if ini_done > index

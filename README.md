@@ -24,10 +24,12 @@ bundle exec ruby exec.rb -i /source_folder -o /out_folder -b
 ###  実行ファイル(exec.rb)
 ```
 以下の処理を行う
+```
+```
 ・コマンドラインオプション(b)があった場合、リジュームせずに最初からやり直す
 　iniファイルを初期化する。
 ・入力jsonフォルダからjsonファイルパス・ファイル数を取得する。
-　取得する時はiniファイルの入力フォルダ及び、サブフォルダ毎の最大ファイル数設定値を超えたか確認する
+　取得する時はiniファイルの入力フォルダ及び、サブフォルダ毎の最大ファイル数設定値を超えてないかどうか確認する
 ・iniファイル更新（全入力ファイル数・入力フォルダ名・出力フォルダ名で）
 ・入力フォルダと同サイズのディスク空き容量があるかどうか確認する
 ・iniファイルの全ファイル数と処理済のファイル数が一致していたらiniファイルを初期化する
@@ -36,14 +38,17 @@ bundle exec ruby exec.rb -i /source_folder -o /out_folder -b
 ・　途中で止めた場合、続きから処理を再開してリジュームする
 ・　入力ファイル(json)を取得する
 ・　取得した入力ファイル(json)のsourcedb・sourceidを使用して、オリジナルjsonを取得する
+　　ただし、同じファイルパス・sourcedb・sourceidの場合は一回だけオリジナルjsonファイルを取得する
 ・　取得したオリジナルjsonに一つのjsonオブジェクトが帰ってきたら関数モジュール経由で
-　　PubAnnotationのannotationモデルの中のalign_annotationsのロジックで処理する
+　　PubAnnotationのannotationモデルのalign_annotationsのロジックで処理する
 　　　処理した結果を取得した入力ファイル(json)の出力ファイル[sourcedb_sourceid.json]として、出力jsonフォルダに出力する
 ・　取得したオリジナルjsonにjson arrayが帰ってきたら関数モジュール経由で
-　　PubAnnotationのannotationモデルの中のprepare_annotations_divsのロジックで処理する
+　　PubAnnotationのannotationモデルのprepare_annotations_divsのロジックで処理する
 　　　処理した結果を取得した入力ファイル(json)の出力ファイル[sourcedb_sourceid_divid.json]として、出力jsonフォルダに出力する
+```
+```
 上記の各処理中にエラーが起きたら、次の処理をせずに、そこで止める。
-進捗はprocess.iniに出力する
+進捗状況はprocess.iniに出力する
 ```
 
 ###  関数モジュール(function.rb)
