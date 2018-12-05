@@ -1,3 +1,5 @@
+#!/usr/bin/env ruby
+
 require 'json'
 require 'active_support'
 require 'active_support/core_ext'
@@ -14,18 +16,17 @@ require './lib/function.rb'
 
 # コマンドラインからの引数の取得（i:入力jsonフォルダ、o:出力jsonフォルダ、b:最初からやり直すオプション）
 @argv = ARGV.getopts('i:o:b')
-
 begin
   # 比較用の変数初期化
-  cmp_inputfile_path = nil
   cmp_sourcedb = nil
   cmp_sourceid = nil
   # コマンドラインオプションの取得
-  source_folder = '.'"#{@argv['i']}"''
-  target_folder = '.'"#{@argv['o']}"''
+  source_folder = @argv['i']
+  target_folder = @argv['o']
   option_beginning = @argv['b']
   # コマンドラインオプション(b)があった場合、リジュームせずに最初からやり直す
   Function.setBeginning(target_folder) if option_beginning
+  Function.iniFileUpdate(0, 0, 'null', 'null', 'null') if option_beginning
 
   # 入力ファイルのファイルパス配列を取得。
   ini_folder_files_max = Function.getIniFile('constant', 'folder_files_max')
@@ -53,8 +54,8 @@ begin
   Function.iniFileUpdate(0, 0, 'null', 'null', 'null') if source_files_count == ini_done
   # 取得したファイルパスをソーティングする
   source_files = Function.sort_sources(source_folder, source_files)
-
   # ソーティングしたファイルパスを元に、入力jsonファイル毎に処理する
+  local_jsons = []
   source_files.each_with_animation.with_index do |inputfile_path, index|
     # 途中で止めた場合、続きから処理を再開してリジュームする
     next if ini_done > index
@@ -63,7 +64,8 @@ begin
       inputfile_path = inputfile_path
     end
     # 入力ファイル(json)を取得する
-    local_json = Function.get_local_json(inputfile_path)
+    local_json = Function.get_local_json(inputfile_path, index)
+    local_jsons << local_json
     sourcedb = local_json[:sourcedb]
     sourceid = local_json[:sourceid]
     # 出力ファイルのファイルパス設定
@@ -71,33 +73,38 @@ begin
     output_dir.gsub!(@argv['i'], @argv['o'])
     output_filename = "#{sourcedb}_#{sourceid}"
     outputfile = "#{output_dir}/#{output_filename}"
+
     # 同じファイルパスのjsonファイルのsourcedbとsourceidが一致している場合
-    if cmp_inputfile_path == inputfile_path and cmp_sourcedb == sourcedb and cmp_sourceid == sourceid
+    if cmp_sourcedb == sourcedb and cmp_sourceid == sourceid
       next
     else
-      cmp_inputfile_path = inputfile_path
       cmp_sourcedb = sourcedb
       cmp_sourceid = sourceid
       # オリジナルjsonを取得する
       original_json = Function.get_original_json(inputfile_path, sourcedb, sourceid)
       if original_json.length == 1
-        # マージ処理（ハッシュリターン）
-        merge_annotations = Function.merge_align_annotations(inputfile_path, local_json, original_json[0][:text])
-        # 出力処理
-        outputfile = "#{outputfile}.json"
-        Function.output_json(output_dir, outputfile, merge_annotations, '')
+        local_jsons.each do |local_json|
+          beginning_time2 = Time.now
+              # アライン処理（ハッシュリターン）
+              annotations = Function.align_annotations(inputfile_path, local_json, original_json[0][:text])
+              # 出力処理
+              outputfile = "#{outputfile}.json"
+              Function.output_json(inputfile_path, output_dir, outputfile, annotations, '')
+        end
       else
-        # マージ処理（配列リターン）
-        merge_annotations = Function.merge_prepare_annotations_divs(inputfile_path, local_json, original_json)
-        # 取得した入力ファイル(json)とオリジナルファイル(json)を整列する
-        next unless merge_annotations.present?
-        if merge_annotations.length == 1
-          # 出力処理
-          Function.output_json(output_dir, outputfile, merge_annotations[0], merge_annotations[0][:divid])
-        else
-          merge_annotations.each do |annotation|
-            # 出力処理（複数）
-            Function.output_json(output_dir, outputfile, annotation, annotation[:divid])
+        local_jsons.each do |local_json|
+          # アライン処理（配列リターン）
+          annotations = Function.prepare_annotations_divs(inputfile_path, local_json, original_json)
+          # 取得した入力ファイル(json)とオリジナルファイル(json)を整列する
+          next unless annotations.present?
+          if annotations.length == 1
+            # 出力処理
+            Function.output_json(inputfile_path, output_dir, outputfile, annotations[0], annotations[0][:divid])
+          else
+            annotations.each do |annotation|
+              # 出力処理（複数）
+              Function.output_json(inputfile_path, output_dir, outputfile, annotation, annotation[:divid])
+            end
           end
         end
       end

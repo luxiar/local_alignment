@@ -16,8 +16,8 @@ class TextAlignment::LCSMin
   PLACEHOLDER_CHAR = '_'
 
   def initialize (str1, str2)
-    return "nil string" if str1.nil? || str2.nil?
-    return "empty string" if str1.empty? || str2.empty?
+    raise ArgumentError, "nil string" if str1.nil? || str2.nil?
+    raise ArgumentError, "empty string" if str1.empty? || str2.empty?
 
     # str1 is copied as it is.
     # str2 is copied with w/s characters replaced with the placeholder characters,
@@ -89,8 +89,8 @@ class TextAlignment::LCSMin
   end
 
   def num_big_gaps (sdiff, initial, last)
-    return "nil sdiff" if sdiff.nil?
-    return "invalid indice: #{initial}, #{last}" unless last >= initial
+    raise ArgumentError, "nil sdiff" if sdiff.nil?
+    raise ArgumentError, "invalid indice: #{initial}, #{last}" unless last >= initial
 
     state1 = :initial
     state2 = :initial

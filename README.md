@@ -1,17 +1,17 @@
-###  入力jsonファイル格納
-```
-/source_folderフォルダにjsonファイルを格納する
-```
-
 ### コマンドの実行方法
 ```
-bundle exec ruby exec.rb -i /source_folder -o /out_folder -b
+bundle exec bin/pubannotation_local_align -i source_folder -o out_folder -b
 ```
 ```
 -i : 入力jsonフォルダ
 -o : 出力jsonフォルダ
 -b : リジュームせずに最初からやり直すためのオプション。
 　　　オプションなしで実行すると、例外で止まった時の状態から実施される。
+```
+
+###  入力jsonファイル格納
+```
+/source_folderフォルダにjsonファイルを格納する
 ```
 
 ###  出力jsonファイル

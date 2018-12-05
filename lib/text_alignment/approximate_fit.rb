@@ -12,7 +12,7 @@ class << TextAlignment
 
   # If finds an approximate region of str2 that contains str1
   def approximate_fit(str1, str2)
-    return 'nil string' if str1.nil? || str2.nil?
+    raise ArgumentError, 'nil string' if str1.nil? || str2.nil?
     return 0, str2.length if str2.length < TextAlignment::MIN_LENGTH_FOR_APPROXIMATION
 
     ngram1 = (0 .. str1.length - TextAlignment::SIGNATURE_NGRAM).collect{|i| str1[i, TextAlignment::SIGNATURE_NGRAM]}

@@ -7,7 +7,7 @@ module Common
         f.read
       end
     rescue
-      nil
+      false
     end
 
     # オリジナルjsonファイル取得
@@ -20,12 +20,13 @@ module Common
       end
       case response
         when Net::HTTPSuccess
-          response.body
+          json = response.body
+          JSON.parse(json, symbolize_names: true)
         else
-          nil
+          [uri.to_s, response.value].join("：")
         end
-    rescue
-      nil
+    rescue => e
+      [uri.to_s, e.class, e].join("：")
     end
 
     # jsonファイル出力
@@ -95,8 +96,8 @@ module Common
         end
       end
       true
-    rescue
-      false
+    rescue => e
+      [e.class, e].join("：")
     end
   end
 end

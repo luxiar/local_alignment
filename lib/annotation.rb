@@ -1,8 +1,8 @@
 class Annotation
   # normalize annotations passed by an HTTP call
   def self.normalize!(annotations, prefix = nil)
-    return "annotations must be a hash." unless annotations.class == Hash
-    return "annotations must include a 'text'"  unless annotations[:text].present?
+    raise ArgumentError, "annotations must be a hash." unless annotations.class == Hash
+    raise ArgumentError, "annotations must include a 'text'"  unless annotations[:text].present?
 
     if annotations[:sourcedb].present?
       annotations[:sourcedb] = 'PubMed' if annotations[:sourcedb].downcase == 'pubmed'
@@ -11,7 +11,7 @@ class Annotation
     end
 
     if annotations[:denotations].present?
-      return "'denotations' must be an array." unless annotations[:denotations].class == Array
+      raise ArgumentError, "'denotations' must be an array." unless annotations[:denotations].class == Array
       annotations[:denotations].each{|d| d = d.symbolize_keys}
 
       annotations = Annotation.chain_spans(annotations)
@@ -20,8 +20,8 @@ class Annotation
       idnum = 1
 
       annotations[:denotations].each do |a|
-        return "a denotation must have a 'span' or a pair of 'begin' and 'end'." unless (a[:span].present? && a[:span][:begin].present? && a[:span][:end].present?) || (a[:begin].present? && a[:end].present?)
-        return "a denotation must have an 'obj'." unless a[:obj].present?
+        raise ArgumentError, "a denotation must have a 'span' or a pair of 'begin' and 'end'." unless (a[:span].present? && a[:span][:begin].present? && a[:span][:end].present?) || (a[:begin].present? && a[:end].present?)
+        raise ArgumentError, "a denotation must have an 'obj'." unless a[:obj].present?
 
         unless a.has_key? :id
           idnum += 1 until !ids.include?('T' + idnum.to_s)
@@ -33,14 +33,14 @@ class Annotation
         a[:span][:begin] = a[:span][:begin].to_i if a[:span][:begin].is_a? String
         a[:span][:end]   = a[:span][:end].to_i   if a[:span][:end].is_a? String
 
-        return "the begin offset must be between 0 and the length of the text: #{a}" if a[:span][:begin] < 0 || a[:span][:begin] > annotations[:text].length
-        return "the end offset must be between 0 and the length of the text." if a[:span][:end] < 0 || a[:span][:end] > annotations[:text].length
-        return "the begin offset must not be bigger than the end offset." if a[:span][:begin] > a[:span][:end]
+        raise ArgumentError, "the begin offset must be between 0 and the length of the text: #{a}" if a[:span][:begin] < 0 || a[:span][:begin] > annotations[:text].length
+        raise ArgumentError, "the end offset must be between 0 and the length of the text." if a[:span][:end] < 0 || a[:span][:end] > annotations[:text].length
+        raise ArgumentError, "the begin offset must not be bigger than the end offset." if a[:span][:begin] > a[:span][:end]
       end
     end
 
     if annotations[:relations].present?
-      return "'relations' must be an array." unless annotations[:relations].class == Array
+      raise ArgumentError, "'relations' must be an array." unless annotations[:relations].class == Array
       denotation_ids = annotations[:denotations].collect{|a| a[:id]}
 
       annotations[:relations].each{|a| a = a.symbolize_keys}
@@ -49,8 +49,8 @@ class Annotation
       idnum = 1
 
       annotations[:relations].each do |a|
-        return "a relation must have 'subj', 'obj' and 'pred'." unless a[:subj].present? && a[:obj].present? && a[:pred].present?
-        return "'subj' and 'obj' of a relation must reference to a denotation: [#{a}]." unless (denotation_ids.include? a[:subj]) && (denotation_ids.include? a[:obj])
+        raise ArgumentError, "a relation must have 'subj', 'obj' and 'pred'." unless a[:subj].present? && a[:obj].present? && a[:pred].present?
+        raise ArgumentError, "'subj' and 'obj' of a relation must reference to a denotation: [#{a}]." unless (denotation_ids.include? a[:subj]) && (denotation_ids.include? a[:obj])
 
         unless a.has_key? :id
           idnum += 1 until !ids.include?('R' + idnum.to_s)
@@ -61,7 +61,7 @@ class Annotation
     end
 
     if annotations[:modifications].present?
-      return "'modifications' must be an array." unless annotations[:modifications].class == Array
+      raise ArgumentError, "'modifications' must be an array." unless annotations[:modifications].class == Array
       annotations[:modifications].each{|a| a = a.symbolize_keys}
 
       dr_ids = annotations[:denotations].collect{|a| a[:id]} + annotations[:relations].collect{|a| a[:id]}
@@ -70,8 +70,8 @@ class Annotation
       idnum = 1
 
       annotations[:modifications].each do |a|
-        return "a modification must have 'pred' and 'obj'." unless a[:pred].present? && a[:obj].present?
-        return "'obj' of a modification must reference to a denotation or a relation: [#{a}]." unless dr_ids.include? a[:obj]
+        raise ArgumentError, "a modification must have 'pred' and 'obj'." unless a[:pred].present? && a[:obj].present?
+        raise ArgumentError, "'obj' of a modification must reference to a denotation or a relation: [#{a}]." unless dr_ids.include? a[:obj]
 
         unless a.has_key? :id
           idnum += 1 until !ids.include?('M' + idnum.to_s)
@@ -131,10 +131,9 @@ class Annotation
     if annotations[:denotations].present? && original_text != annotations[:text]
       num = annotations[:denotations].length
       annotations[:denotations] = align_denotations(annotations[:denotations], original_text, annotations[:text])
-      return "Alignment failed. Text may be too much different." if annotations[:denotations].length < num
-      annotations[:denotations].each{|d| return "Alignment failed. Text may be too much different." if d[:span][:begin].nil? || d[:span][:end].nil?}
+      raise "Alignment failed. Text may be too much different." if annotations[:denotations].length < num
+      annotations[:denotations].each{|d| raise "Alignment failed. Text may be too much different." if d[:span][:begin].nil? || d[:span][:end].nil?}
     end
-
     annotations.select{|k,v| v.present?}
   end
 

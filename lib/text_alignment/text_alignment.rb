@@ -20,8 +20,8 @@ class TextAlignment::TextAlignment
   attr_reader :str1_match_initial, :str1_match_final, :str2_match_initial, :str2_match_final
 
   def initialize(str1, str2, mappings = [])
-    return "nil string" if str1.nil? || str2.nil?
-    return "nil mappings" if mappings.nil?
+    raise ArgumentError, "nil string" if str1.nil? || str2.nil?
+    raise ArgumentError, "nil mappings" if mappings.nil?
 
     ## preprocessing
     str1 = str1.dup
@@ -34,7 +34,7 @@ class TextAlignment::TextAlignment
         break
       end
     end
-    return "Cannot find nomatch character" if @nomatch_char1.nil?
+    raise RuntimeError, "Cannot find nomatch character" if @nomatch_char1.nil?
 
     ## find the first nomatch character
     TextAlignment::NOMATCH_CHARS.each_char do |c|
@@ -43,7 +43,7 @@ class TextAlignment::TextAlignment
         break
       end
     end
-    return "Cannot find nomatch character" if @nomatch_char2.nil?
+    raise RuntimeError, "Cannot find nomatch character" if @nomatch_char2.nil?
 
     # single character mappings
     character_mappings = mappings.select{|m| m[0].length == 1 && m[1].length == 1}

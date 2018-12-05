@@ -3,8 +3,8 @@ module TextAlignment; end unless defined? TextAlignment
 
 class << TextAlignment
   def glcs_required?(str1, mappings = [])
-    return "nil string" if str1.nil?
-    return "nil mappings" if mappings.nil?
+    raise ArgumentError, "nil string" if str1.nil?
+    raise ArgumentError, "nil mappings" if mappings.nil?
 
     # character mappings can be safely applied to the strings withoug changing the position of other characters
     character_mappings = mappings.select{|m| m[0].length == 1 && m[1].length == 1}

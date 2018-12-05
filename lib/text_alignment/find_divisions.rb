@@ -15,9 +15,9 @@ class << TextAlignment
 
   # It finds, among the sources, the right divisions for the taraget text to fit in.
   def find_divisions(target, sources, mappings = [])
-    return "nil target"           if target == nil
-    return "nil or empty sources" if sources == nil || sources.empty?
-    return "nil mappings"         if mappings == nil
+    raise ArgumentError, "nil target"           if target == nil
+    raise ArgumentError, "nil or empty sources" if sources == nil || sources.empty?
+    raise ArgumentError, "nil mappings"         if mappings == nil
 
     character_mappings = mappings.select{|m| m[0].length == 1 && m[1].length == 1}
     mappings.delete_if{|m| m[0].length == 1 && m[1].length == 1}
