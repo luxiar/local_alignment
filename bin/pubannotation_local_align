@@ -84,12 +84,11 @@ begin
       original_json = Function.get_original_json(inputfile_path, sourcedb, sourceid)
       if original_json.length == 1
         local_jsons.each do |local_json|
-          beginning_time2 = Time.now
-              # アライン処理（ハッシュリターン）
-              annotations = Function.align_annotations(inputfile_path, local_json, original_json[0][:text])
-              # 出力処理
-              outputfile = "#{outputfile}.json"
-              Function.output_json(inputfile_path, output_dir, outputfile, annotations, '')
+          # アライン処理（ハッシュリターン）
+          annotations = Function.align_annotations(inputfile_path, local_json, original_json[0][:text])
+          # 出力処理
+          outputfile = "#{outputfile}.json"
+          Function.output_json(inputfile_path, output_dir, outputfile, annotations, '')
         end
       else
         local_jsons.each do |local_json|
