@@ -11,12 +11,12 @@ bundle exec bin/pubannotation_local_align -i source_folder -o out_folder -b
 
 ###  入力jsonファイル格納
 ```
-/source_folderフォルダにjsonファイルを格納する
+source_folderフォルダにjsonファイルを格納する
 ```
 
 ###  出力jsonファイル
 ```
-/out_folderフォルダ内にjsonファイルが出力される
+out_folderフォルダ内にjsonファイルが出力される
 ```
 
 ###  仕様内容
