@@ -73,37 +73,34 @@ begin
     output_dir.gsub!(@argv['i'], @argv['o'])
     output_filename = "#{sourcedb}_#{sourceid}"
     outputfile = "#{output_dir}/#{output_filename}"
-
+    original_json = nil
     # 同じファイルパスのjsonファイルのsourcedbとsourceidが一致している場合
     if cmp_sourcedb == sourcedb and cmp_sourceid == sourceid
-      next
+      # オリジナルjsonを取得する
+      original_json = Function.get_original_json(inputfile_path, sourcedb, sourceid)
     else
       cmp_sourcedb = sourcedb
       cmp_sourceid = sourceid
-      # オリジナルjsonを取得する
-      original_json = Function.get_original_json(inputfile_path, sourcedb, sourceid)
+    end
+    unless original_json.blank?
       if original_json.length == 1
-        local_jsons.each do |local_json|
-          # アライン処理（ハッシュリターン）
-          annotations = Function.align_annotations(inputfile_path, local_json, original_json[0][:text])
-          # 出力処理
-          outputfile = "#{outputfile}.json"
-          Function.output_json(inputfile_path, output_dir, outputfile, annotations, '')
-        end
+        # アライン処理（ハッシュリターン）
+        annotations = Function.align_annotations(inputfile_path, local_json, original_json[0][:text])
+        # 出力処理
+        outputfile = "#{outputfile}.json"
+        Function.output_json(inputfile_path, output_dir, outputfile, annotations, '')
       else
-        local_jsons.each do |local_json|
-          # アライン処理（配列リターン）
-          annotations = Function.prepare_annotations_divs(inputfile_path, local_json, original_json)
-          # 取得した入力ファイル(json)とオリジナルファイル(json)を整列する
-          next unless annotations.present?
-          if annotations.length == 1
-            # 出力処理
-            Function.output_json(inputfile_path, output_dir, outputfile, annotations[0], annotations[0][:divid])
-          else
-            annotations.each do |annotation|
-              # 出力処理（複数）
-              Function.output_json(inputfile_path, output_dir, outputfile, annotation, annotation[:divid])
-            end
+        # アライン処理（配列リターン）
+        annotations = Function.prepare_annotations_divs(inputfile_path, local_json, original_json)
+        # 取得した入力ファイル(json)とオリジナルファイル(json)を整列する
+        next unless annotations.present?
+        if annotations.length == 1
+          # 出力処理
+          Function.output_json(inputfile_path, output_dir, outputfile, annotations[0], annotations[0][:divid])
+        else
+          annotations.each do |annotation|
+            # 出力処理（複数）
+            Function.output_json(inputfile_path, output_dir, outputfile, annotation, annotation[:divid])
           end
         end
       end
