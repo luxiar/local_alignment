@@ -2,13 +2,18 @@ class ErrorMsg < StandardError; end
 
 module Function
   class << self
+    @@warnig_option = false
+    def setWarningOption(option)
+      @@warnig_option = option unless option.blank?
+    end
+
     # 出力jsonフォルダの削除を行う
     def setBeginning(target_folder)
       # 出力jsonフォルダがあったら削除する
       FileUtils.rm_rf(target_folder) if File.directory?(target_folder)
     rescue => e
       error_msg = error_message("Failed to delete output folder:#{e.message}", '', '', "#{target_folder}", "#{__FILE__}", "#{__method__}")
-      warn warning_message("#{e.message}", '', '', "#{target_folder}", "#{e.backtrace.reject { |line| line =~ /gem/ }.join("\n")}")
+      warn warning_message("#{e.message}", '', '', "#{target_folder}", "#{e.backtrace.reject { |line| line =~ /gem/ }.join("\n")}") if @@warnig_option
       raise ErrorMsg, error_msg
     end
 
@@ -31,7 +36,7 @@ module Function
       end
     rescue => e
       error_msg = error_message("Failed to get file path array:#{e.message}", '', "#{source_folder}", '', "#{__FILE__}", "#{__method__}")
-      warn warning_message("#{e.message}", '', "#{source_folder}", '', "#{e.backtrace.reject { |line| line =~ /gem|rbenv/ }.join("\n")}")
+      warn warning_message("#{e.message}", '', "#{source_folder}", '', "#{e.backtrace.reject { |line| line =~ /gem|rbenv/ }.join("\n")}") if @@warnig_option
       raise ErrorMsg, error_msg
     end
 
@@ -43,7 +48,7 @@ module Function
       end
     rescue => e
       error_msg = error_message("File path sort failed.", '', "#{source_folder}", '', "#{__FILE__}", "#{__method__}")
-      warn warning_message("#{e.message}", '', "#{source_folder}", '', "#{e.backtrace.reject { |line| line =~ /gem/ }.join("\n")}")
+      warn warning_message("#{e.message}", '', "#{source_folder}", '', "#{e.backtrace.reject { |line| line =~ /gem/ }.join("\n")}") if @@warnig_option
       raise ErrorMsg, error_msg
     end
 
@@ -67,7 +72,7 @@ module Function
       local_json
     rescue => e
       error_msg = error_message("#{e.message}", "#{inputfile_path}", '', '', "#{__FILE__}", "#{__method__}") if error_msg.blank?
-      warn warning_message("#{e.message}", "#{inputfile_path}", '', '', "#{e.backtrace.reject { |line| line =~ /gem|rbenv/ }.join("\n")}")
+      warn warning_message("#{e.message}", "#{inputfile_path}", '', '', "#{e.backtrace.reject { |line| line =~ /gem|rbenv/ }.join("\n")}") if @@warnig_option
       raise ErrorMsg, error_msg
     end
 
@@ -125,7 +130,7 @@ module Function
       original_json
     rescue => e
       error_msg = error_message("#{e.message}", "#{inputfile_path}", '', '', "#{__FILE__}", "#{__method__}") if error_msg.blank?
-      warn warning_message("#{e.message}", "#{inputfile_path}", '', '', "#{e.backtrace.reject { |line| line =~ /gem|rbenv/ }.join("\n")}")
+      warn warning_message("#{e.message}", "#{inputfile_path}", '', '', "#{e.backtrace.reject { |line| line =~ /gem|rbenv/ }.join("\n")}") if @@warnig_option
       raise ErrorMsg, error_msg
     end
 
@@ -140,7 +145,7 @@ module Function
       align_annotations
     rescue => e
       error_msg = error_message("#{e.message}", "#{inputfile_path}", '', '', "#{__FILE__}", "#{__method__}") if error_msg.blank?
-      warn warning_message("#{e.message}", "#{inputfile_path}", '', '', "#{e.backtrace.reject { |line| line =~ /gem|rbenv/ }.join("\n")}")
+      warn warning_message("#{e.message}", "#{inputfile_path}", '', '', "#{e.backtrace.reject { |line| line =~ /gem|rbenv/ }.join("\n")}") if @@warnig_option
       raise ErrorMsg, error_msg
     end
 
@@ -155,7 +160,7 @@ module Function
       prepare_annotations_divs
     rescue => e
       error_msg = error_message("#{e.message}", "#{inputfile_path}", '', '', "#{__FILE__}", "#{__method__}") if error_msg.blank?
-      warn warning_message("#{e.message}", "#{inputfile_path}", '', '', "#{e.backtrace.reject { |line| line =~ /gem|rbenv/ }.join("\n")}")
+      warn warning_message("#{e.message}", "#{inputfile_path}", '', '', "#{e.backtrace.reject { |line| line =~ /gem|rbenv/ }.join("\n")}") if @@warnig_option
       raise ErrorMsg, error_msg
     end
 
@@ -170,7 +175,7 @@ module Function
       output
     rescue => e
       error_msg = error_message("#{e.message}", "#{inputfile_path}", '', '', "#{__FILE__}", "#{__method__}") if error_msg.blank?
-      warn warning_message("#{e.message}", "#{inputfile_path}", '', '', "#{e.backtrace.reject { |line| line =~ /gem|rbenv/ }.join("\n")}")
+      warn warning_message("#{e.message}", "#{inputfile_path}", '', '', "#{e.backtrace.reject { |line| line =~ /gem|rbenv/ }.join("\n")}") if @@warnig_option
       raise ErrorMsg, error_msg
     end
 
@@ -185,7 +190,7 @@ module Function
       ini.write
     rescue => e
       error_msg = error_message("Failed to update ini file", '', '', '', "#{__FILE__}", "#{__method__}")
-      warn warning_message("Failed to update ini file", '', '', '', "#{e.backtrace.reject { |line| line =~ /gem/ }.join("\n")}")
+      warn warning_message("Failed to update ini file", '', '', '', "#{e.backtrace.reject { |line| line =~ /gem/ }.join("\n")}") if @@warnig_option
       raise ErrorMsg, error_msg
     end
 
@@ -195,7 +200,7 @@ module Function
       inifile[section][name]
     rescue => e
       error_msg = error_message("Failed to read ini[#{section}][#{name}]", '', '', '', "#{__FILE__}", "#{__method__}")
-      warn warning_message("Failed to read ini[#{section}][#{name}]", '', '', '', "#{e.backtrace.reject { |line| line =~ /gem/ }.join("\n")}")
+      warn warning_message("Failed to read ini[#{section}][#{name}]", '', '', '', "#{e.backtrace.reject { |line| line =~ /gem/ }.join("\n")}") if @@warnig_option
       raise ErrorMsg, error_msg
     end
 

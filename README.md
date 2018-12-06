@@ -1,12 +1,14 @@
 ### コマンドの実行方法
 ```
-bundle exec bin/pubannotation_local_align -i source_folder -o out_folder -b
+bundle exec bin/pubannotation_local_align -i source_folder -o out_folder -b -d
 ```
 ```
 -i : 入力jsonフォルダ
 -o : 出力jsonフォルダ
 -b : リジュームせずに最初からやり直すためのオプション。
 　　　オプションなしで実行すると、例外で止まった時の状態から実施される。
+-d : 警告メッセージをコンソールに出力する。
+　　　オプションなしで実行すると、例外で止まった時は警告メッセージをコンソールに出力しない。
 ```
 
 ###  入力jsonファイル格納

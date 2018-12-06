@@ -14,8 +14,8 @@ require './lib/text_alignment/text_alignment.rb'
 require './lib/common.rb'
 require './lib/function.rb'
 
-# コマンドラインからの引数の取得（i:入力jsonフォルダ、o:出力jsonフォルダ、b:最初からやり直すオプション）
-@argv = ARGV.getopts('i:o:b')
+# コマンドラインからの引数の取得（i:入力jsonフォルダ、o:出力jsonフォルダ、b:最初からやり直すオプション,d:警告メッセージ表示用のオプション）
+@argv = ARGV.getopts('i:o:bd')
 begin
   # 比較用の変数初期化
   cmp_sourcedb = nil
@@ -25,9 +25,13 @@ begin
   source_folder = @argv['i']
   target_folder = @argv['o']
   option_beginning = @argv['b']
+  option_warning = @argv['d']
+  # コマンドラインオプション(d)があった場合、警告メッセージ表示
+  Function.setWarningOption(option_warning) if option_warning
   # コマンドラインオプション(b)があった場合、リジュームせずに最初からやり直す
   Function.setBeginning(target_folder) if option_beginning
   Function.iniFileUpdate(0, 0, 'null', 'null', 'null') if option_beginning
+
 
   # 入力ファイルのファイルパス配列を取得。
   ini_folder_files_max = Function.getIniFile('constant', 'folder_files_max')
