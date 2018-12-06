@@ -20,6 +20,7 @@ begin
   # 比較用の変数初期化
   cmp_sourcedb = nil
   cmp_sourceid = nil
+  original_json = nil
   # コマンドラインオプションの取得
   source_folder = @argv['i']
   target_folder = @argv['o']
@@ -55,7 +56,6 @@ begin
   # 取得したファイルパスをソーティングする
   source_files = Function.sort_sources(source_folder, source_files)
   # ソーティングしたファイルパスを元に、入力jsonファイル毎に処理する
-  local_jsons = []
   source_files.each_with_animation.with_index do |inputfile_path, index|
     # 途中で止めた場合、続きから処理を再開してリジュームする
     next if ini_done > index
@@ -65,7 +65,6 @@ begin
     end
     # 入力ファイル(json)を取得する
     local_json = Function.get_local_json(inputfile_path, index)
-    local_jsons << local_json
     sourcedb = local_json[:sourcedb]
     sourceid = local_json[:sourceid]
     # 出力ファイルのファイルパス設定
@@ -73,14 +72,12 @@ begin
     output_dir.gsub!(@argv['i'], @argv['o'])
     output_filename = "#{sourcedb}_#{sourceid}"
     outputfile = "#{output_dir}/#{output_filename}"
-    original_json = nil
     # 同じファイルパスのjsonファイルのsourcedbとsourceidが一致している場合
-    if cmp_sourcedb == sourcedb and cmp_sourceid == sourceid
-      # オリジナルjsonを取得する
-      original_json = Function.get_original_json(inputfile_path, sourcedb, sourceid)
-    else
+    if cmp_sourcedb != sourcedb or cmp_sourceid != sourceid
       cmp_sourcedb = sourcedb
       cmp_sourceid = sourceid
+      # オリジナルjsonを取得する
+      original_json = Function.get_original_json(inputfile_path, sourcedb, sourceid)
     end
     unless original_json.blank?
       if original_json.length == 1
