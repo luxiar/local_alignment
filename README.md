@@ -23,7 +23,7 @@ out_folderフォルダ内にjsonファイルが出力される
 
 ###  仕様内容
 
-###  実行ファイル(exec.rb)
+###  実行ファイル(bin/pubannotation_local_align)
 ```
 以下の処理を行う
 ```
@@ -55,7 +55,7 @@ out_folderフォルダ内にjsonファイルが出力される
 
 ###  関数モジュール(function.rb)
 ```
-※実行ファイル(exec.rb)から参照され、対象結果を返す。
+※実行ファイル(bin/pubannotation_local_align)から参照され、対象結果を返す。
 ```
 
 ###  共通ジュール(common.rb)
